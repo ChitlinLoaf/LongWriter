@@ -20,6 +20,7 @@ Left: LongWriter-glm4-9b; Right: GLM-4-9B-chat
 ## 🔍 Table of Contents
 - [⚙️ LongWriter Deployment](#deployment)
 - [🤖️ AgentWrite](#agentwrite)
+- [🧩 Semantic Synthesis](#semantic-synthesis)
 - [🖥️ Model Training](#longwriter-training)
 - [📊 Evaluation](#evaluation)
 - [👀 Cases](#case)
@@ -54,6 +55,24 @@ Alternatively, you can deploy the model with [vllm](https://github.com/vllm-proj
 ![agentwrite](https://github.com/user-attachments/assets/5d80314b-eab6-4945-848d-0db8e23ffc90)
 
 We are also open-sourcing AgentWrite under `agentwrite/`, our automated ultra-long output data construction pipeline. Run `plan.py` and then `write.py` to obtain the final data. Please configure your API key in the files.
+
+<a name="semantic-synthesis"></a>
+## 🧩 Semantic Synthesis
+
+The repository now includes `semantic_synthesis/`, a modular phrase amplification pipeline that expands structured CSV inputs into rich phrase strands. For each entry the pipeline
+
+- generates five variations across *direct amplification*, *creative extension* and *rhetorical abstraction* levels,
+- groups outputs into `[ORIGIN]_[STYLE]_[LEVEL].md` documents with optional 150‑word summaries,
+- constructs a similarity graph linking phrases by intent, style and focus, and
+- logs a mapping `.csv` for downstream reuse.
+
+Run the pipeline on any CSV placed in `semantic_inputs/` with:
+
+```bash
+python semantic_synthesis/pipeline.py semantic_inputs/your_file.csv
+```
+
+Outputs, summaries and diagnostics are written to `semantic_outputs/`.
 
 
 <a name="longwriter-training"></a>
