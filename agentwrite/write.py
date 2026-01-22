@@ -59,7 +59,6 @@ def get_pred(rank, world_size, data, max_new_tokens, fout, template, cache_fout,
             inst = item['prompt']
             plan = item['plan'].strip().replace('\n\n', '\n')
             steps = plan.split('\n')
-            text = ""
             responses = []
             if len(steps) > 50:
                 print(plan)
@@ -68,9 +67,9 @@ def get_pred(rank, world_size, data, max_new_tokens, fout, template, cache_fout,
                 if inst in cache_dict and step in cache_dict[inst]:
                     response = cache_dict[inst][step]
                     responses.append(response)
-                    text += response + '\n\n'
                     continue
-                prompt = template.replace('$INST$', inst).replace('$PLAN$', plan.strip()).replace('$TEXT$', text.strip()).replace('$STEP$', step.strip())
+                prompt_text = "\n\n".join(responses).strip()
+                prompt = template.replace('$INST$', inst).replace('$PLAN$', plan.strip()).replace('$TEXT$', prompt_text).replace('$STEP$', step.strip())
                 response = get_response_gpt4(prompt, max_new_tokens)
                 if response == '':
                     break
@@ -78,7 +77,6 @@ def get_pred(rank, world_size, data, max_new_tokens, fout, template, cache_fout,
                 cache_fout.write(json.dumps({"prompt": inst, "step": step, "response": response}, ensure_ascii=False)+'\n')
                 cache_fout.flush()
                 responses.append(response)
-                text += response + '\n\n'
             if response == '':
                 continue
             item["write"] = responses
