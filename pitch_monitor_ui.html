@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Pitch Monitor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f16;
+      --panel: #131a27;
+      --accent: #7c5cff;
+      --ok: #20c997;
+      --warn: #ffc107;
+      --danger: #ff6b6b;
+      --text: #f4f7ff;
+      --muted: #a7b0c0;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #172035, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .app {
+      width: min(920px, 100%);
+      background: color-mix(in srgb, var(--panel) 85%, black);
+      border: 1px solid #2a3448;
+      border-radius: 20px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      padding: 1.1rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 2vw, 1.8rem);
+      letter-spacing: 0.015em;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button, select {
+      border: 1px solid #33415d;
+      background: #1a2233;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 0.55rem 0.8rem;
+      font-size: 0.95rem;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #7662ff, #6f9bff);
+      border: none;
+      font-weight: 700;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: #101726;
+      border: 1px solid #2b3346;
+      border-radius: 16px;
+      padding: 1rem;
+    }
+
+    .pitch {
+      display: grid;
+      gap: 0.65rem;
+      align-content: start;
+    }
+
+    .note {
+      font-size: clamp(2.8rem, 7vw, 5.2rem);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      line-height: 1;
+    }
+
+    .hz {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-top: -0.25rem;
+    }
+
+    .meter {
+      margin-top: 0.5rem;
+      position: relative;
+      height: 28px;
+      border-radius: 999px;
+      background: #1f2a40;
+      border: 1px solid #34435f;
+      overflow: hidden;
+    }
+
+    .meter .center-line {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #a7b0c0;
+      opacity: 0.7;
+    }
+
+    .needle {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      width: 10px;
+      border-radius: 8px;
+      transform: translateX(-50%);
+      background: var(--ok);
+      left: 50%;
+      transition: left 0.08s linear, background 0.08s linear;
+    }
+
+    .hint {
+      font-size: 0.94rem;
+      color: var(--muted);
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .scale-notes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.65rem;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid #36435e;
+      background: #1b2539;
+      padding: 0.24rem 0.55rem;
+      font-size: 0.84rem;
+      color: #dbe2f2;
+    }
+
+    canvas {
+      width: 100%;
+      height: 125px;
+      background: #0f1625;
+      border: 1px solid #2b344a;
+      border-radius: 12px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="header">
+      <div>
+        <h1>🎤 Voice Pitch Monitor + Tuning UI</h1>
+        <p class="status" id="status">Mic is off. Press <strong>Start Monitoring</strong>.</p>
+      </div>
+      <div class="controls">
+        <label>
+          Key
+          <select id="keySelect"></select>
+        </label>
+        <label>
+          Scale
+          <select id="scaleSelect">
+            <option value="major">Major</option>
+            <option value="minor" selected>Minor</option>
+          </select>
+        </label>
+        <button id="startBtn" class="primary">Start Monitoring</button>
+        <button id="stopBtn">Stop</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card pitch">
+        <div class="note" id="noteLabel">--</div>
+        <div class="hz" id="freqLabel">0.00 Hz</div>
+        <div><strong>Nearest Scale Note:</strong> <span id="targetLabel">--</span></div>
+        <div><strong>Cents from Target:</strong> <span id="centsLabel">0</span></div>
+
+        <div class="meter">
+          <div class="center-line"></div>
+          <div class="needle" id="needle"></div>
+        </div>
+        <p class="hint" id="tuneHint">Sing a note to begin.</p>
+
+        <div>
+          <strong>Current Key Notes</strong>
+          <div class="scale-notes" id="scaleNotes"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3 style="margin-top:0">Input Waveform</h3>
+        <canvas id="waveCanvas" width="700" height="125"></canvas>
+        <p class="subtle">Tip: Use headphones to avoid feedback. This UI is a live pitch coach and monitor.</p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const MAJOR = [0, 2, 4, 5, 7, 9, 11];
+    const MINOR = [0, 2, 3, 5, 7, 8, 10];
+
+    const keySelect = document.getElementById("keySelect");
+    const scaleSelect = document.getElementById("scaleSelect");
+    const statusEl = document.getElementById("status");
+    const noteLabel = document.getElementById("noteLabel");
+    const freqLabel = document.getElementById("freqLabel");
+    const targetLabel = document.getElementById("targetLabel");
+    const centsLabel = document.getElementById("centsLabel");
+    const tuneHint = document.getElementById("tuneHint");
+    const needle = document.getElementById("needle");
+    const scaleNotes = document.getElementById("scaleNotes");
+    const waveCanvas = document.getElementById("waveCanvas");
+    const waveCtx = waveCanvas.getContext("2d");
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    NOTE_NAMES.forEach((n, i) => {
+      const option = document.createElement("option");
+      option.value = String(i);
+      option.textContent = n;
+      if (n === "E") option.selected = true;
+      keySelect.appendChild(option);
+    });
+
+    let audioCtx;
+    let analyser;
+    let mediaStream;
+    let source;
+    let rafId;
+    let timeData;
+
+    function updateScaleList() {
+      scaleNotes.innerHTML = "";
+      const root = Number(keySelect.value);
+      const intervals = scaleSelect.value === "major" ? MAJOR : MINOR;
+      intervals.map(i => NOTE_NAMES[(root + i) % 12]).forEach(note => {
+        const el = document.createElement("span");
+        el.className = "pill";
+        el.textContent = note;
+        scaleNotes.appendChild(el);
+      });
+    }
+
+    function noteNumberFromFrequency(freq) {
+      return 69 + 12 * Math.log2(freq / 440);
+    }
+
+    function frequencyFromNoteNumber(note) {
+      return 440 * Math.pow(2, (note - 69) / 12);
+    }
+
+    function noteName(noteNum) {
+      const note = Math.round(noteNum);
+      const name = NOTE_NAMES[((note % 12) + 12) % 12];
+      const octave = Math.floor(note / 12) - 1;
+      return `${name}${octave}`;
+    }
+
+    function centsOff(freq, targetFreq) {
+      return 1200 * Math.log2(freq / targetFreq);
+    }
+
+    function nearestScaleNote(freq) {
+      const root = Number(keySelect.value);
+      const intervals = scaleSelect.value === "major" ? MAJOR : MINOR;
+      const midi = noteNumberFromFrequency(freq);
+      const rounded = Math.round(midi);
+      const octave = Math.floor(rounded / 12);
+
+      let best = null;
+      for (let oct = octave - 1; oct <= octave + 1; oct++) {
+        for (const i of intervals) {
+          const midiCandidate = oct * 12 + ((root + i) % 12);
+          const diff = Math.abs(midi - midiCandidate);
+          if (!best || diff < best.diff) {
+            best = { midi: midiCandidate, diff };
+          }
+        }
+      }
+
+      const targetFreq = frequencyFromNoteNumber(best.midi);
+      return {
+        midi: best.midi,
+        freq: targetFreq,
+        label: noteName(best.midi),
+      };
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+      const SIZE = buffer.length;
+      let rms = 0;
+      for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
+      rms = Math.sqrt(rms / SIZE);
+      if (rms < 0.01) return -1;
+
+      let r1 = 0;
+      let r2 = SIZE - 1;
+      const thres = 0.2;
+      for (let i = 0; i < SIZE / 2; i++) {
+        if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+      }
+      for (let i = 1; i < SIZE / 2; i++) {
+        if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+      }
+
+      const trimmed = buffer.slice(r1, r2);
+      const len = trimmed.length;
+      const c = new Array(len).fill(0);
+      for (let i = 0; i < len; i++) {
+        for (let j = 0; j < len - i; j++) {
+          c[i] += trimmed[j] * trimmed[j + i];
+        }
+      }
+
+      let d = 0;
+      while (c[d] > c[d + 1]) d++;
+
+      let maxval = -1;
+      let maxpos = -1;
+      for (let i = d; i < len; i++) {
+        if (c[i] > maxval) {
+          maxval = c[i];
+          maxpos = i;
+        }
+      }
+      if (maxpos <= 0) return -1;
+
+      const T0 = maxpos;
+      return sampleRate / T0;
+    }
+
+    function drawWave() {
+      const width = waveCanvas.width;
+      const height = waveCanvas.height;
+      waveCtx.fillStyle = "#0f1625";
+      waveCtx.fillRect(0, 0, width, height);
+      waveCtx.strokeStyle = "#6f9bff";
+      waveCtx.lineWidth = 2;
+      waveCtx.beginPath();
+
+      for (let i = 0; i < timeData.length; i++) {
+        const v = (timeData[i] - 128) / 128;
+        const x = (i / timeData.length) * width;
+        const y = height / 2 + v * (height / 2.2);
+        if (i === 0) waveCtx.moveTo(x, y);
+        else waveCtx.lineTo(x, y);
+      }
+      waveCtx.stroke();
+    }
+
+    function renderFrame() {
+      if (!analyser) return;
+      analyser.getByteTimeDomainData(timeData);
+      drawWave();
+
+      const floatBuf = new Float32Array(timeData.length);
+      for (let i = 0; i < timeData.length; i++) {
+        floatBuf[i] = (timeData[i] - 128) / 128;
+      }
+      const freq = autoCorrelate(floatBuf, audioCtx.sampleRate);
+
+      if (freq > 50 && freq < 1500) {
+        const midi = noteNumberFromFrequency(freq);
+        const closest = Math.round(midi);
+        noteLabel.textContent = noteName(closest);
+        freqLabel.textContent = `${freq.toFixed(2)} Hz`;
+
+        const target = nearestScaleNote(freq);
+        targetLabel.textContent = `${target.label} (${target.freq.toFixed(2)} Hz)`;
+
+        const cents = centsOff(freq, target.freq);
+        centsLabel.textContent = `${cents >= 0 ? "+" : ""}${cents.toFixed(1)} cents`;
+
+        const pos = Math.max(0, Math.min(100, 50 + (cents / 50) * 50));
+        needle.style.left = `${pos}%`;
+
+        const abs = Math.abs(cents);
+        if (abs <= 10) {
+          needle.style.background = "var(--ok)";
+          tuneHint.textContent = "Great! You're in tune for the selected key.";
+        } else if (abs <= 25) {
+          needle.style.background = "var(--warn)";
+          tuneHint.textContent = cents > 0 ? "A little sharp — relax pitch slightly." : "A little flat — raise pitch slightly.";
+        } else {
+          needle.style.background = "var(--danger)";
+          tuneHint.textContent = cents > 0 ? "Sharp — come down toward center." : "Flat — come up toward center.";
+        }
+      } else {
+        noteLabel.textContent = "--";
+        freqLabel.textContent = "0.00 Hz";
+        targetLabel.textContent = "--";
+        centsLabel.textContent = "0";
+        needle.style.left = "50%";
+        tuneHint.textContent = "Sing a clear sustained note to track pitch.";
+      }
+
+      rafId = requestAnimationFrame(renderFrame);
+    }
+
+    async function startMonitoring() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        timeData = new Uint8Array(analyser.fftSize);
+
+        source = audioCtx.createMediaStreamSource(mediaStream);
+        source.connect(analyser);
+
+        statusEl.textContent = "Monitoring live microphone input (analysis mode).";
+        if (rafId) cancelAnimationFrame(rafId);
+        renderFrame();
+      } catch (err) {
+        statusEl.textContent = `Mic access failed: ${err.message}`;
+      }
+    }
+
+    function stopMonitoring() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+      if (audioCtx) {
+        audioCtx.close();
+        audioCtx = null;
+      }
+      analyser = null;
+      statusEl.textContent = "Mic stopped.";
+    }
+
+    startBtn.addEventListener("click", startMonitoring);
+    stopBtn.addEventListener("click", stopMonitoring);
+    keySelect.addEventListener("change", updateScaleList);
+    scaleSelect.addEventListener("change", updateScaleList);
+
+    updateScaleList();
+  </script>
+</body>
+</html>
