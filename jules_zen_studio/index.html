@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JULES ZEN STUDIO</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="studio-shell">
+    <header class="hero-panel glass-panel">
+      <div>
+        <p class="eyebrow">Jules Co-Producer Runtime</p>
+        <h1>JULES ZEN STUDIO</h1>
+      </div>
+      <div class="mode-strip" aria-label="Runtime mode indicators">
+        <span class="mode-pill active"><span class="pulse-dot"></span>ZEN MODE</span>
+        <span class="mode-pill">Hugging Face Audio Engineers</span>
+        <span class="mode-pill">Llama Gopher</span>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="glass-panel chat-panel" aria-labelledby="chat-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">AI Co-Producer</p>
+            <h2 id="chat-title">Jules Messages</h2>
+          </div>
+          <span class="status-chip online">ONLINE</span>
+        </div>
+        <div id="chatLog" class="chat-log" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" type="text" autocomplete="off" placeholder="Ask Jules for mix, lyric, or vocal ideas..." />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+
+      <section class="glass-panel status-panel" aria-labelledby="status-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">System</p>
+            <h2 id="status-title">Runtime Status</h2>
+          </div>
+          <span class="status-chip">SYNCED</span>
+        </div>
+        <div class="status-grid">
+          <div><span>Session</span><strong>Midnight Vocal Stack</strong></div>
+          <div><span>Tempo</span><strong>92 BPM</strong></div>
+          <div><span>Key</span><strong>F# minor</strong></div>
+          <div><span>Zen State</span><strong class="neon-text">Calm Focus</strong></div>
+        </div>
+        <div class="cpu-card">
+          <span>DSP Load</span>
+          <div class="progress-track"><div id="dspLoad" class="progress-fill"></div></div>
+        </div>
+      </section>
+
+      <section class="glass-panel transport-panel" aria-labelledby="transport-title">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Control Room</p>
+            <h2 id="transport-title">Transport</h2>
+          </div>
+          <span id="clockReadout" class="mono-readout">00:00:00</span>
+        </div>
+        <div class="transport-buttons">
+          <button class="transport-button primary" data-mode="play">PLAY</button>
+          <button class="transport-button record" data-mode="record">RECORD</button>
+          <button class="transport-button" data-mode="monitor">MONITOR</button>
+          <button class="transport-button" data-mode="mute">MUTE</button>
+        </div>
+      </section>
+
+      <section class="glass-panel meters-panel" aria-labelledby="meters-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Signal</p>
+            <h2 id="meters-title">Level Meters</h2>
+          </div>
+        </div>
+        <div class="meter-stack">
+          <div class="meter-row"><span>Input</span><div class="meter"><div class="meter-fill" data-meter="input"></div></div><b id="inputDb">-12 dB</b></div>
+          <div class="meter-row"><span>Output</span><div class="meter"><div class="meter-fill" data-meter="output"></div></div><b id="outputDb">-8 dB</b></div>
+          <div class="meter-row"><span>Monitor</span><div class="meter"><div class="meter-fill" data-meter="monitor"></div></div><b id="monitorDb">-14 dB</b></div>
+        </div>
+      </section>
+
+      <section class="glass-panel eq-panel" aria-labelledby="eq-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Tone</p>
+            <h2 id="eq-title">7-Band EQ</h2>
+          </div>
+          <span class="status-chip">AI CURVE</span>
+        </div>
+        <div id="eqBands" class="eq-bands"></div>
+      </section>
+
+      <section class="glass-panel clips-panel" aria-labelledby="clips-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Takes</p>
+            <h2 id="clips-title">Vocal Clips</h2>
+          </div>
+        </div>
+        <div id="clipList" class="clip-list"></div>
+      </section>
+
+      <section class="glass-panel waveform-panel wide" aria-labelledby="waveform-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Audio</p>
+            <h2 id="waveform-title">Waveform Display</h2>
+          </div>
+          <span class="mono-readout">Bar 017.3</span>
+        </div>
+        <canvas id="waveformCanvas" width="1000" height="230"></canvas>
+      </section>
+
+      <section class="glass-panel pitch-panel" aria-labelledby="pitch-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Melody</p>
+            <h2 id="pitch-title">Pitch Curve</h2>
+          </div>
+        </div>
+        <canvas id="pitchCanvas" width="640" height="210"></canvas>
+      </section>
+
+      <section class="glass-panel synth-panel" aria-labelledby="synth-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Arrangement</p>
+            <h2 id="synth-title">Synth Lanes</h2>
+          </div>
+        </div>
+        <div id="synthLanes" class="synth-lanes"></div>
+      </section>
+
+      <section class="glass-panel clip-info-panel" aria-labelledby="clip-info-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Inspector</p>
+            <h2 id="clip-info-title">Clip Info</h2>
+          </div>
+        </div>
+        <dl id="clipInfo" class="clip-info"></dl>
+        <label class="notes-label" for="notesField">Producer Notes</label>
+        <textarea id="notesField" rows="5">Keep the lead intimate. Ask Jules for alternate harmony stacks before committing the bridge.</textarea>
+      </section>
+
+      <section class="glass-panel detection-panel" aria-labelledby="detection-title">
+        <div class="panel-heading compact">
+          <div>
+            <p class="section-kicker">Analyzer</p>
+            <h2 id="detection-title">Pitch Detection</h2>
+          </div>
+          <span id="detectedNote" class="note-badge">F#3</span>
+        </div>
+        <div id="pitchRadar" class="pitch-radar">
+          <span></span><span></span><span></span><span></span>
+          <div class="radar-core">LOCK</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-status glass-panel">
+      <span>48 kHz sample rate</span>
+      <span>128 buffer</span>
+      <span><b id="latencyValue">7.8 ms</b> latency</span>
+      <span>HF models: demucs · whisper · musicgen</span>
+      <span>Llama inference: local mock</span>
+      <span>Zen state: breath-synced</span>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
