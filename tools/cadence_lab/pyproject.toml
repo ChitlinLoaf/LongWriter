@@ -1,0 +1,8 @@
+[project]
+name = "cadence_lab"
+version = "0.1.0"
+
+[tool.cadence_lab]
+seed = 1337
+k_values = [6, 8, 12]
+c_values = [6, 8, 12]
